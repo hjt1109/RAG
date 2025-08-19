@@ -45,7 +45,8 @@ async def rerank_by_file_id(request: RerankRequest):
             effective_file_id = request.file_id
             initial_results = rag.milvus_client.search_similar_in_file(query_embedding, file_id=effective_file_id, top_k=initial_top_k)
         else:
-            raise HTTPException(status_code=400, detail="文件ID不能为空")
+            effective_file_id = None
+            initial_results = rag.milvus_client.search_similar(query_embedding, top_k=initial_top_k)
        
         retrieval_time = (time.time() - retrieval_start) * 1000
 
