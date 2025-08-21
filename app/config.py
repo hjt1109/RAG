@@ -15,7 +15,7 @@ HF_ENDPOINT = os.getenv("HF_ENDPOINT", "https://hf-mirror.com")  # Add mirror en
 
 # GPU配置 - 按照用户需求
 EMBEDDING_GPU_DEVICES = os.getenv("EMBEDDING_GPU_DEVICES", "cpu")  # embedding模型使用单GPU 1
-RERANKER_GPU_DEVICES = os.getenv("RERANKER_GPU_DEVICES", "cuda:1")  # 重排模型使用多GPU 1,2,3
+RERANKER_GPU_DEVICES = os.getenv("RERANKER_GPU_DEVICES", "cpu")  # 重排模型使用多GPU 1,2,3
 
 # GPU内存优化配置
 ENABLE_MEMORY_OPTIMIZATION = os.getenv("ENABLE_MEMORY_OPTIMIZATION", "true").lower() == "true"

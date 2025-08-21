@@ -2,8 +2,7 @@ from fastapi import APIRouter, HTTPException
 from loguru import logger
 import time
 import uuid
-from typing import List, Optional
-
+from milvus_utils_v2 import My_MilvusClient
 from rag_pipeline import RAGPipeline
 from entitys.Rerank import(
     RerankRequest,
@@ -13,7 +12,7 @@ from entitys.Rerank import(
     RerankBatchResponse
 )
 from config import USE_RERANKER, RERANKER_TOP_K, INITIAL_RETRIEVAL_TOP_K
-
+import re 
 router = APIRouter(prefix="/rerank", tags=["Rerank Operations"])
 
 # 全局RAG实例
@@ -79,7 +78,31 @@ async def rerank_by_file_id(request: RerankRequest):
         raise HTTPException(status_code=500, detail=f"重排查询失败: {str(e)}")
 
 
-       
+@router.post("/Rerank_In_Componets_Table", summary="组件信息表查询", response_model=RerankResponse)
+async def rerank_in_componets_table(request: RerankRequest):
+    question = request.question
+    file_id = request.file_id
+    top_k = request.top_k or RERANKER_TOP_K
+    initial_top_k = request.initial_top_k or INITIAL_RETRIEVAL_TOP_K
+    file_name = request.file_name
+    try:
+        start_time = time.time()
+
+        # 检查重排模型是否可用
+        if not rag.reranker:
+            raise HTTPException(status_code=503, detail="重排模型未加载或不可用")
+        # 生成查询ID
+        query_id = str(uuid.uuid4())
+        logger.info(f"开始重排查询 {query_id}: {question}")
+        # 1️⃣ 根据 file_name 解析 file_id
+        effective_file_id = None
+        if file_name and file_name.strip():
+            effective_file_id = rag.milvus_client.get_file_id_by_name(file_name.strip())
+            if not effective_file_id:
+                raise HTTPException(status_code=404, detail=f"未找到文件 {file_name}")
+        
+        # 2️⃣ 初始检索
+        retrieval_start = time.time()
 @router.post("/single", summary="单次重排查询", response_model=RerankResponse)
 async def rerank_single(request: RerankRequest):
     """
@@ -150,7 +173,7 @@ async def rerank_single(request: RerankRequest):
 
 
 
-@router.post("/batch", summary="批量重排查询", response_model=RerankBatchResponse)
+@router.post("/batch", summary="批量重排查询", response_model=RerankBatchResponse , deprecated=True)
 async def rerank_batch(request: RerankBatchRequest):
     """
     批量重排查询
@@ -242,30 +265,3 @@ async def get_rerank_status():
         logger.error(f"获取重排状态失败: {e}")
         raise HTTPException(status_code=500, detail=f"获取重排状态失败: {str(e)}")
 
-@router.post("/test", summary="测试重排功能")
-async def test_rerank():
-    """测试重排功能是否正常工作"""
-    try:
-        test_question = "这是一个测试问题"
-        test_request = RerankRequest(
-            question=test_question,
-            top_k=3,
-            initial_top_k=10
-        )
-        
-        result = await rerank_single(test_request)
-        
-        return {
-            "status": "success",
-            "message": "重排功能测试成功",
-            "test_result": {
-                "question": test_question,
-                "total_documents": result.total_documents,
-                "reranked_documents": result.reranked_documents,
-                "total_time_ms": result.total_time_ms
-            }
-        }
-        
-    except Exception as e:
-        logger.error(f"重排功能测试失败: {e}")
-        raise HTTPException(status_code=500, detail=f"重排功能测试失败: {str(e)}")

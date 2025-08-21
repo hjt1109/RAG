@@ -6,11 +6,9 @@ class RerankRequest(BaseModel):
     question: str = Field(..., description="查询问题")
     top_k: Optional[int] = Field(5, description="返回前k个重排结果")
     initial_top_k: Optional[int] = Field(20, description="初始检索的文档数量")
-    min_score: Optional[float] = Field(0.0, description="最小重排分数阈值")
-    max_score: Optional[float] = Field(1.0, description="最大重排分数阈值")
     file_id: Optional[str] = Field(None, description="按文件ID过滤")
     file_name: Optional[str] = Field(None, description="按文件名过滤")
-    include_metadata: Optional[bool] = Field(True, description="是否包含元数据信息")
+
 
 class RerankItem(BaseModel):
     content: str = Field(..., description="文档内容")

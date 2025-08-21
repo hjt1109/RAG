@@ -6,7 +6,7 @@ from embedding_utils import EmbeddingModel
 from reranker_utils import RerankerModel
 from graph_utils import OperationGraph
 from config import USE_RERANKER, RERANKER_TOP_K, INITIAL_RETRIEVAL_TOP_K, SIMILARITY_THRESHOLD
-import re 
+
 
 
 def cosine_similarity(a, b):
@@ -44,6 +44,7 @@ class RAGPipeline:
         except Exception as e:
             logger.error(f"Document ingestion failed: {e}")
             raise
+
 
     def is_invalid(self, results: List[str], query_emb: List[float]) -> bool:
         """Judge if RAG recall is invalid (e.g., low similarity or empty)"""

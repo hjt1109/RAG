@@ -37,7 +37,6 @@ class RecallResponse(BaseModel):
 
 class DocumentUploadResponse(BaseModel):
     file_id: str = Field(..., description="唯一文件ID")
-    table_id: str = Field(..., description="数据库表ID")
     status_code: int = Field(200, description="状态码")
     message: str = Field("插入成功", description="状态消息")
     processed_count: int = Field(..., description="处理的记录数量")

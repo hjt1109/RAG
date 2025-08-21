@@ -84,8 +84,71 @@ class ExcelProcessor:
         except Exception as e:
             logger.error(f"处理文件 {file.filename} 时发生错误: {e}")
             raise HTTPException(status_code=500, detail=f"文件处理失败: {str(e)}")
+
+
+    def process_data_component_file(self, file: UploadFile) -> Tuple[str, Dict[str, List[str]]]:
+        """
+        处理数据组件文件，返回文件ID和处理后的字典
+        
+        Args:
+            file: 上传的文件
+            
+        Returns:
+            Tuple[str, Dict[str, List[str]]]: (文件ID, 处理后的字典)
+        """
+        if not self.validate_file(file):
+            raise HTTPException(
+                status_code=400, 
+                detail=f"不支持的文件格式。支持的格式: {', '.join(self.supported_extensions)}"
+            )
+        
+        # 生成唯一文件ID
+        file_id = str(uuid.uuid4())
+        
+        try:
+            # 创建临时文件
+            with tempfile.NamedTemporaryFile(delete=False, suffix=os.path.splitext(file.filename)[1]) as temp_file:
+                # 写入上传的文件内容
+                content = file.file.read()
+                temp_file.write(content)
+                temp_file.flush()
+                
+                # 根据文件扩展名读取数据
+                file_extension = os.path.splitext(file.filename.lower())[1]
+                
+                if file_extension == '.csv':
+                    # 尝试不同的编码格式
+                    encodings = ['utf-8', 'gbk', 'gb2312', 'utf-8-sig']
+                    df = None
+                    for encoding in encodings:
+                        try:
+                            df = pd.read_csv(temp_file.name, encoding=encoding)
+                            break
+                        except UnicodeDecodeError:
+                            continue
+                    
+                    if df is None:
+                        raise HTTPException(status_code=400, detail="无法解析CSV文件，请检查文件编码")
+                else:
+                    # XLSX文件
+                    df = pd.read_excel(temp_file.name)
+                
+                # 清理临时文件
+                os.unlink(temp_file.name)
+                
+                # 处理数据
+                processed_texts = self._process_data_component(df)
+                
+                logger.info(f"成功处理文件 {file.filename}，文件ID: {file_id}，生成了 {len(processed_texts)} 个数据组件")
+                
+                return file_id, processed_texts
+                
+        except Exception as e:
+            logger.error(f"处理文件 {file.filename} 时发生错误: {e}")
+            raise HTTPException(status_code=500, detail=f"文件处理失败: {str(e)}")
+
     
-    def _process_dataframe(self, df: pd.DataFrame, file_id: str) -> List[str]:
+    def _process_dataframe(self, df: pd.DataFrame) -> List[str]:
         """
         处理DataFrame，将表头与内容拼接
         
@@ -128,3 +191,20 @@ class ExcelProcessor:
                 processed_texts.append(final_text)
         
         return processed_texts
+
+
+    def _process_data_component(self, df : pd.DataFrame) -> Dict[str , List[str]]:
+        """
+        处理数据组件表，返回形式：
+        {
+            "header1": ["value11", "value12", "value13"],
+            "header2": ["value21", "value22", "value23"],
+        }
+        """
+        result = {}
+        for column in df.columns:
+            result[column] = df[column].astype(str).dropna().tolist()
+        
+        return result
+    
+        
