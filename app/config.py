@@ -4,7 +4,7 @@ import os
 load_dotenv()
 
 MILVUS_HOST = os.getenv("MILVUS_HOST", "localhost")
-MILVUS_PORT = os.getenv("MILVUS_PORT", "19530")
+MILVUS_PORT = os.getenv("MILVUS_PORT", "19531")
 MILVUS_COLLECTION = os.getenv("MILVUS_COLLECTION", "default")
 EMBEDDING_MODEL_PATH = os.getenv("EMBEDDING_MODEL_PATH", "/app/models/bge-large-zh")
 RERANKER_MODEL_PATH = os.getenv("RERANKER_MODEL_PATH", "/app/models/bge-reranker-large")
