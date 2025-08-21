@@ -1,5 +1,6 @@
 from pymilvus import MilvusClient , DataType
 from loguru import logger
+from pymilvus.orm import collection
 from config import MILVUS_HOST, MILVUS_PORT, MILVUS_COLLECTION
 import uuid
 from typing import List, Tuple, Dict, Any,Optional
@@ -20,13 +21,13 @@ class My_MilvusClient:
         
         self.dim = dim
         self.collection_name = collection_name
-        self._prepare_collection()
+        self._prepare_collection(collection_name=self.collection_name)
 
-    def _prepare_collection(self):
+    def _prepare_collection(self , collection_name: str ):
         #使用self.clent 统一操作
         has_collection = self.client.has_collection(collection_name=self.collection_name)
         if has_collection:
-            logger.info(f"Collection '{MILVUS_COLLECTION}' already exists.")
+            logger.info(f"Collection '{collection_name}' already exists.")
             # 确保 collection 已加载
             self.client.load_collection(collection_name=self.collection_name)
             return

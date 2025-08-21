@@ -8,7 +8,6 @@ class TestMilvus:
     def __init__(self) :
         self.dim = 128
         self.collection_name = "test_collection"
-
     
     def searchinMy_MilvusClient(self, top_k):
         results = mc.client.search(
@@ -23,4 +22,5 @@ class TestMilvus:
 
 if __name__ == '__main__':
     test = TestMilvus()
+
     print(test.searchinMy_MilvusClient(1))
