@@ -1,8 +1,8 @@
 # app/api/graph_retrieval_endpoints.py (New file: Create this file for the graph-enhanced retrieval endpoint)
 from ast import Mult
 from fastapi import APIRouter, HTTPException
-from entitys.GraphS import GraphRequestbyFileId, GraphResponsebyFileId, MultiStepRequest, MultiStepItem, MultiStepResponse # Reuse your existing models
-from rag_pipeline import RAGPipeline
+from ..entitys.GraphS import GraphRequestbyFileId, GraphResponsebyFileId, MultiStepRequest, MultiStepItem, MultiStepResponse # Reuse your existing models
+from ..Utils.rag_pipeline import RAGPipeline
 from loguru import logger
 from typing import List
 

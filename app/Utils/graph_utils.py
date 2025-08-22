@@ -1,7 +1,7 @@
 import networkx as nx
 import numpy as np
-from config import COMPONENTS, EDGES, SIMILARITY_THRESHOLD
-from embedding_utils import EmbeddingModel
+from ..config import COMPONENTS, EDGES, SIMILARITY_THRESHOLD
+from .embedding_utils import EmbeddingModel
 from loguru import logger
 from typing import List, Optional
 

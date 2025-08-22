@@ -1,15 +1,15 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from logger import setup_logger
-from api.rag_endpoints import router as rag_router
-from api.chat_endpoints import router as chat_router
-from api.document_endpoints import router as document_router
-from api.health_endpoints import router as health_router
-from api.rerank_endpoints import router as rerank_router
-from api.delete_endpoints import router as delete_router
-from api.collection_endpoints import router as collection_router
-from api.graph_retrieval_endpoints import router as graph_retrieval_router
+from app.logger import setup_logger
+from app.api.rag_endpoints import router as rag_router
+from app.api.chat_endpoints import router as chat_router
+from app.api.document_endpoints import router as document_router
+from app.api.health_endpoints import router as health_router
+from app.api.rerank_endpoints import router as rerank_router
+from app.api.delete_endpoints import router as delete_router
+from app.api.collection_endpoints import router as collection_router
+from app.api.graph_retrieval_endpoints import router as graph_retrieval_router
 
 app = FastAPI(
     title="RAG System API",

@@ -2,21 +2,30 @@ from fastapi import APIRouter, HTTPException
 from loguru import logger
 import time
 import uuid
-from milvus_utils_v2 import My_MilvusClient
-from rag_pipeline import RAGPipeline
-from entitys.Rerank import(
+from ..Utils.reranker_utils import RerankerModel
+from ..Utils.milvus_utils_v2 import My_MilvusClient
+from ..Utils.rag_pipeline import RAGPipeline
+from ..entitys.Rerank import(
+    ComponentInfo,
+    ComponentResult,
     RerankRequest,
     RerankResponse,
     RerankItem,
     RerankBatchRequest,
-    RerankBatchResponse
+    RerankBatchResponse,
+    RerankResponse_Componets
 )
-from config import USE_RERANKER, RERANKER_TOP_K, INITIAL_RETRIEVAL_TOP_K
-import re 
+from ..config import USE_RERANKER, RERANKER_TOP_K, INITIAL_RETRIEVAL_TOP_K
+from ..Utils.System_Recogni import system_recogni
+from ..Utils.Components_Recogni import components_recogni
+from ..Utils.Mutil_Retrieval import Multi_Retrieval_withfile_id, Multi_Retrieval_withoutfile_id
+
+
 router = APIRouter(prefix="/rerank", tags=["Rerank Operations"])
 
-# 全局RAG实例
 rag = RAGPipeline()
+Milvus_Components = My_MilvusClient()
+reranker = RerankerModel()
 
 @router.post("/rerank_by_file_id", summary="根据文件ID重排查询", response_model=RerankResponse)
 async def rerank_by_file_id(request: RerankRequest):
@@ -78,31 +87,119 @@ async def rerank_by_file_id(request: RerankRequest):
         raise HTTPException(status_code=500, detail=f"重排查询失败: {str(e)}")
 
 
-@router.post("/Rerank_In_Componets_Table", summary="组件信息表查询", response_model=RerankResponse)
+@router.post("/Retrieval_In_Componets_Table", summary="组件信息表查询", response_model=RerankResponse_Componets)
 async def rerank_in_componets_table(request: RerankRequest):
     question = request.question
+    """
+    question:
+    #测试意图：验证：个人活期存入，交易成功
+
+    #操作步骤：
+
+    1、登录&&核心系统&&
+
+    2、进入<存款账户信息查询>交易，查询账户A的当前余额为Y元(数据要求:有效的个人活期存款账户A)
+
+    3、进入<个人现金存款>交易
+
+    4、输入账户A账号和金额X元
+
+    5、提交交易，交易成功
+
+    6、进入<存款账户信息查询>交易，查询账户A的当前余额增加X元
+
+"""
     file_id = request.file_id
     top_k = request.top_k or RERANKER_TOP_K
+    filter_score = request.filter_scores
     initial_top_k = request.initial_top_k or INITIAL_RETRIEVAL_TOP_K
     file_name = request.file_name
+    use_reranker = request.use_reranker 
     try:
         start_time = time.time()
 
         # 检查重排模型是否可用
-        if not rag.reranker:
+        if not reranker:
             raise HTTPException(status_code=503, detail="重排模型未加载或不可用")
+        
         # 生成查询ID
         query_id = str(uuid.uuid4())
         logger.info(f"开始重排查询 {query_id}: {question}")
+        
         # 1️⃣ 根据 file_name 解析 file_id
         effective_file_id = None
         if file_name and file_name.strip():
-            effective_file_id = rag.milvus_client.get_file_id_by_name(file_name.strip())
+            effective_file_id = Milvus_Components.get_file_id_by_name(file_name.strip())
             if not effective_file_id:
                 raise HTTPException(status_code=404, detail=f"未找到文件 {file_name}")
         
         # 2️⃣ 初始检索
         retrieval_start = time.time()
+        system_name = system_recogni.extract_system_name(question)
+        if system_name:
+            logger.info(f"交易系统名称: {system_name}")
+        else:
+            logger.info(f"未识别到交易系统名称")
+    
+        components = components_recogni.get_components(question)
+        if components:
+            logger.info(f"组件内容: {components}")
+        else:
+            logger.info(f"未识别到组件内容")
+        
+        if effective_file_id:
+            initial_results = Multi_Retrieval_withfile_id(components, system_name, file_id=effective_file_id, filter_score=filter_score, top_k=initial_top_k)
+        else:
+            initial_results = Multi_Retrieval_withoutfile_id(components, system_name, filter_score=filter_score, top_k=initial_top_k)
+        retrieval_time = (time.time() - retrieval_start) * 1000
+
+        logger.info(f"初始检索完成，找到 {len(initial_results)} 个文档")
+        
+        # 3️⃣ 重排处理
+        rerank_start = time.time()
+        if use_reranker:
+            reranked_results = reranker.rerank_components(initial_results, top_k)
+        else:
+            reranked_results = {
+                query: [(comp, score, score) for comp, score in components]
+                for query, components in initial_results.items()
+            }
+        rerank_time = (time.time() - rerank_start) * 1000
+        
+        # 4️⃣ 封装响应
+        total_time = (time.time() - start_time) * 1000
+        response = RerankResponse_Componets(
+            query_id=query_id,
+            question=question,
+            file_id=effective_file_id or file_id,
+            file_name=file_name,
+            results={
+                query: [
+                    ComponentResult(
+                        component=ComponentInfo(**comp),
+                        initial_score=initial_score,
+                        rerank_score=rerank_score
+                    )
+                    for comp, initial_score, rerank_score in components
+                ]
+                for query, components in reranked_results.items()
+            },
+            retrieval_time_ms=retrieval_time,
+            rerank_time_ms=rerank_time,
+            total_time_ms=total_time
+        )
+        
+        logger.info(f"查询 {query_id} 完成，总耗时 {total_time:.2f}ms")
+        return response
+        
+    except Exception as e:
+        logger.error(f"查询 {query_id} 失败: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"查询失败: {str(e)}")
+
+
+
+        
+
 @router.post("/single", summary="单次重排查询", response_model=RerankResponse)
 async def rerank_single(request: RerankRequest):
     """

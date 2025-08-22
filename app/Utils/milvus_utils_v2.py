@@ -2,7 +2,7 @@ from pymilvus import MilvusClient, DataType
 from loguru import logger
 import uuid
 from typing import List, Tuple, Dict, Any, Optional
-from config import MILVUS_HOST, MILVUS_PORT
+from ..config import MILVUS_HOST, MILVUS_PORT
 from pypinyin import pinyin, Style
 
 
@@ -19,7 +19,13 @@ class My_MilvusClient:
         
         self.dim = dim
         self.collection_name = collection_name
-        self.field_name_mapping = {}  # 存储原始字段名到规范化字段名的映射
+        self.field_name_mapping = {
+            "组件ID" : "zu_jian_ID",
+            "组件名称" : "zu_jian_ming_cheng",
+            "组件类型" : "zu_jian_lei_xing",
+            "交易系统" : "jiao_yi_xi_tong",
+            "组件说明" : "zu_jian_shuo_ming"
+        }  # 存储原始字段名到规范化字段名的映射
 
     def _normalize_field_name(self, field_name: str) -> str:
         """将字段名规范化，确保只包含数字、字母和下划线"""
@@ -148,22 +154,27 @@ class My_MilvusClient:
         self.client.insert(collection_name=self.collection_name, data=data)
         logger.info(f"Inserted {len(data)} rows with file_id {file_id} and file_name {file_name}.")
 
-    def search_similar(self, query_embedding: List[float], top_k: int = 5) -> List[Tuple[Dict[str, Any], float]]:
+    def search_similar(self, system_name, query_embedding: List[float], top_k: int = 5, filter_score: float = 0.0) -> List[Tuple[Dict[str, Any], float]]:
         results = self.client.search(
             collection_name=self.collection_name,
             data=[query_embedding],
             limit=top_k,
+            filter=f" jiao_yi_xi_tong == '{system_name}' ",
             output_fields=["file_id", "file_name"] + list(self.field_name_mapping.values())
         )[0]
         logger.info(f"Search results: {results}")
-        distances = [hit["distance"] for hit in results]
-        normalized_scores = self.normalize_distance(distances)
         
-        # 将规范化字段名转换回原始字段名
+         # 过滤掉 distance < filter_score 的结果
+        filtered_results = [
+            (hit["entity"], hit["distance"])
+            for hit in results
+            if hit["distance"] >= filter_score
+        ]
+      
+        
+       # 将规范化字段名转换回原始字段名
         search_results = []
-        for hit, score in zip(results, normalized_scores):
-            entity = hit["entity"]
-            # 转换字段名
+        for entity, score in filtered_results:
             converted_entity = {
                 "file_id": entity["file_id"],
                 "file_name": entity["file_name"]
@@ -172,26 +183,32 @@ class My_MilvusClient:
                 if normalized_field in entity:
                     converted_entity[original_field] = entity[normalized_field]
             search_results.append((converted_entity, score))
-        
+
         logger.info(f"Search results with normalized scores: {search_results}")
         return search_results
 
-    def search_similar_in_file(self, query_embedding: List[float], file_id: str, top_k: int) -> List[Tuple[Dict[str, Any], float]]:
+    def search_similar_in_file(self, system_name, query_embedding: List[float], top_k: int, filter_score: float, file_id: str) -> List[Tuple[Dict[str, Any], float]]:
         results = self.client.search(
-            collection_name=self.collection_name,
-            data=[query_embedding],
-            limit=top_k,
-            filter=f'file_id == "{file_id}" AND ',
-            output_fields=["file_id", "file_name"] + list(self.field_name_mapping.values())
-        )[0]
+        collection_name=self.collection_name,
+        data=[query_embedding],
+        limit=top_k,
+        filter=f" file_id == '{file_id}' and jiao_yi_xi_tong == '{system_name}' ",
+        output_fields=["file_id", "file_name", "zu_jian_ID", "zu_jian_ming_cheng", "zu_jian_lei_xing", "jiao_yi_xi_tong", "zu_jian_shuo_ming", ] 
+    )[0]
+
         file_name = results[0]["entity"]["file_name"] if results else ""
         logger.info(f"Search in file_name={file_name} and file_id={file_id} ----> results: {results}")
-        distances = [hit["distance"] for hit in results]
-        
+
+        # 过滤掉 distance < filter_score 的结果
+        filtered_results = [
+            (hit["entity"], hit["distance"])
+            for hit in results
+            if hit["distance"] >= filter_score
+        ]
+
         # 将规范化字段名转换回原始字段名
         search_results = []
-        for hit, score in zip(results, distances):
-            entity = hit["entity"]
+        for entity, score in filtered_results:
             converted_entity = {
                 "file_id": entity["file_id"],
                 "file_name": entity["file_name"]
@@ -200,7 +217,7 @@ class My_MilvusClient:
                 if normalized_field in entity:
                     converted_entity[original_field] = entity[normalized_field]
             search_results.append((converted_entity, score))
-        
+
         logger.info(f"Search results with normalized scores: {search_results}")
         return search_results
 

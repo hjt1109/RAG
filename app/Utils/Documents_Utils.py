@@ -1,7 +1,7 @@
 from typing import List, Dict, Any
 from loguru import logger
-from milvus_utils_v2 import My_MilvusClient
-from embedding_utils import EmbeddingModel
+from .milvus_utils_v2 import My_MilvusClient
+from .embedding_utils import EmbeddingModel
 
 class DocumentUtils:
 

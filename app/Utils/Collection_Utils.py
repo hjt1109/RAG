@@ -1,8 +1,8 @@
 from loguru import logger
 from typing import Dict, Any, List, Optional
-from milvus_utils import My_MilvusClient
-from config import MILVUS_COLLECTION
-from entitys.Delete_Collection import CollectionInfo
+from .milvus_utils import My_MilvusClient
+from ..config import MILVUS_COLLECTION
+from ..entitys.Delete_Collection import CollectionInfo
 
 
 class CollectionManager:

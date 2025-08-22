@@ -9,7 +9,7 @@ import sys
 import os
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
-from milvus_utils import My_MilvusClient
+from .milvus_utils import My_MilvusClient
 from loguru import logger
 from typing import Dict, Any, Optional
 import argparse

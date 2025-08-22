@@ -2,14 +2,14 @@ from fastapi import APIRouter, HTTPException
 from loguru import logger
 from typing import Dict, Any, List, Optional
 
-from entitys.Delete_Collection import (
+from ..entitys.Delete_Collection import (
     DeleteCollectionRequest, 
     DeleteCollectionResponse, 
     DeleteCollectionResponseData,
     CollectionInfo,
     ListCollectionsResponse
 )
-from Collection_Utils import collection_manager
+from ..Utils.Collection_Utils import collection_manager
 
 router = APIRouter(prefix="/collection", tags=["Collection Management"])
 

@@ -3,8 +3,8 @@ from fastapi.responses import JSONResponse
 from loguru import logger
 import os
 
-from rag_pipeline import RAGPipeline
-from entitys.models import ChatCompletionRequest
+from ..Utils.rag_pipeline import RAGPipeline
+from ..entitys.models import ChatCompletionRequest
 
 router = APIRouter(prefix="/v1", tags=["Chat Operations"])
 

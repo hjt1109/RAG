@@ -2,12 +2,12 @@ from transformers import AutoTokenizer, AutoModel,AutoModelForSequenceClassifica
 import torch
 import torch.nn as nn
 from loguru import logger
-from config import RERANKER_MODEL_PATH, RERANKER_GPU_DEVICES, ENABLE_MEMORY_OPTIMIZATION, MAX_MEMORY_FRACTION, ENABLE_MEMORY_POOLING
+from ..config import RERANKER_MODEL_PATH, RERANKER_GPU_DEVICES, ENABLE_MEMORY_OPTIMIZATION, MAX_MEMORY_FRACTION, ENABLE_MEMORY_POOLING
 from typing import List, Tuple
 import numpy as np
 import gc
 import os
-
+from typing import List, Dict, Tuple
 
 class RerankerModel:
     def __init__(self):
@@ -176,9 +176,6 @@ class RerankerModel:
             if ENABLE_MEMORY_OPTIMIZATION and self.device.type == 'cuda':
                 self._clear_gpu_memory()
 
-            
-            
-
             logger.debug(f"Reranked {len(passages)} documents using {self.device}, returning top {len(doc_scores)}")
             return doc_scores
             
@@ -217,3 +214,50 @@ class RerankerModel:
 
         return reranked_results
     
+    def rerank_components(self, initial_results: Dict[str, List], top_k: int = None) -> Dict[str, List[Tuple[Dict, float, float]]]:
+        """
+        对结构化的初始结果进行重排，保留初始分数并添加重排分数
+
+        Args:
+            initial_results: 字典，键为查询，值为包含 (组件信息, 初始分数) 的列表
+            top_k: 返回前 k 个结果，如果为 None 则返回所有结果
+
+        Returns:
+            Dict[str, List[Tuple[Dict, float, float]]]: 重排后的字典，值为 (组件信息, 初始分数, 重排分数) 的列表
+        """
+        reranked_results = {}
+        
+        try:
+            for query, components in initial_results.items():
+                if not components:
+                    reranked_results[query] = []
+                    continue
+                
+                # 提取组件名称作为文档内容，保留初始分数
+                passages_with_scores = [(comp['组件名称'], score) for comp, score in components]
+                
+                # 使用 rerank_with_scores 方法进行重排
+                reranked = self.rerank_with_scores(query, passages_with_scores, top_k)
+                
+                # 将重排结果映射回原始组件信息
+                component_map = {comp['组件名称']: comp for comp, _ in components}
+                reranked_components = [
+                    (component_map[text], initial_score, rerank_score)
+                    for text, rerank_score, initial_score in reranked
+                ]
+                
+                reranked_results[query] = reranked_components
+                
+            logger.info(f"Completed reranking for {len(initial_results)} queries")
+            return reranked_results
+            
+        except Exception as e:
+            logger.error(f"Reranking components failed: {e}")
+            if ENABLE_MEMORY_OPTIMIZATION and self.device.type == 'cuda':
+                self._clear_gpu_memory()
+            # 返回原始结构，添加默认重排分数 0.0
+            logger.warning("Reranking components failed, returning original components with default rerank scores.")
+            return {
+                query: [(comp, score, 0.0) for comp, score in components]
+                for query, components in initial_results.items()
+            }

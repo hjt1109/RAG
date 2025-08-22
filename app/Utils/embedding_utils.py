@@ -3,7 +3,7 @@ from transformers import AutoTokenizer, AutoModel
 import torch
 import torch.nn as nn
 from loguru import logger
-from config import EMBEDDING_MODEL_PATH, EMBEDDING_GPU_DEVICES, ENABLE_MEMORY_OPTIMIZATION, MAX_MEMORY_FRACTION, ENABLE_MEMORY_POOLING
+from ..config import EMBEDDING_MODEL_PATH, EMBEDDING_GPU_DEVICES, ENABLE_MEMORY_OPTIMIZATION, ENABLE_MEMORY_POOLING, MAX_MEMORY_FRACTION
 from typing import List
 import numpy as np
 import gc

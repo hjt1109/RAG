@@ -1,19 +1,21 @@
 from pydantic import BaseModel, Field
-from typing import List, Optional
+from typing import List, Optional, Dict
 
 # 重排相关的模型
 class RerankRequest(BaseModel):
     question: str = Field(..., description="查询问题")
     top_k: Optional[int] = Field(5, description="返回前k个重排结果")
-    initial_top_k: Optional[int] = Field(20, description="初始检索的文档数量")
+    filter_scores: Optional[float] = Field(0.8 , description="过滤分数阈值")
+    initial_top_k: Optional[int] = Field(10, description="初始检索的文档数量")
     file_id: Optional[str] = Field(None, description="按文件ID过滤")
     file_name: Optional[str] = Field(None, description="按文件名过滤")
+    use_reranker: Optional[bool] = Field(False, description="是否使用重排模型")
 
 
 class RerankItem(BaseModel):
     content: str = Field(..., description="文档内容")
-    rerank_score: float = Field(..., description="重排后的分数")
     initial_score: Optional[float] = Field(None, description="初始检索分数")
+    rerank_score: float = Field(..., description="重排后的分数")
     file_id: Optional[str] = Field(..., description="来源文件ID")
     file_name:Optional[str] = Field(..., description="来源文件名")
 
@@ -43,3 +45,29 @@ class RerankBatchResponse(BaseModel):
     batch_processing_time_ms: Optional[float] = Field(None, description="批处理总时间")
     
 
+# 定义组件信息模型
+class ComponentInfo(BaseModel):
+    file_id: str
+    file_name: str
+    组件ID: str
+    组件名称: str
+    组件类型: str
+    交易系统: str
+    组件说明: str
+
+# 定义组件结果模型
+class ComponentResult(BaseModel):
+    component: ComponentInfo
+    initial_score: float
+    rerank_score: float
+
+# 定义响应模型
+class RerankResponse_Componets(BaseModel):
+    query_id: str
+    question: str
+    file_id: Optional[str] = None
+    file_name: Optional[str] = None
+    results: Dict[str, List[ComponentResult]]
+    retrieval_time_ms: float
+    rerank_time_ms: float
+    total_time_ms: float

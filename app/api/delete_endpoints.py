@@ -2,8 +2,8 @@ from fastapi import APIRouter, HTTPException
 from loguru import logger
 from typing import Dict, Any, List
 
-from entitys.Dele_File import DeleFileRequest, DeleFileResponse, DeleFileResponseData
-from milvus_utils import My_MilvusClient
+from ..entitys.Dele_File import DeleFileRequest, DeleFileResponse, DeleFileResponseData
+from ..Utils.milvus_utils import My_MilvusClient
 
 router = APIRouter(prefix="/delete", tags=["Delete Operations"])
 

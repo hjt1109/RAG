@@ -1,7 +1,7 @@
 from pymilvus import MilvusClient , DataType
 from loguru import logger
 from pymilvus.orm import collection
-from config import MILVUS_HOST, MILVUS_PORT, MILVUS_COLLECTION
+from ..config import MILVUS_HOST, MILVUS_PORT, MILVUS_COLLECTION
 import uuid
 from typing import List, Tuple, Dict, Any,Optional
 import time

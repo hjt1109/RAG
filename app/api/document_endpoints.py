@@ -1,10 +1,10 @@
 from pydoc import Doc
 from fastapi import APIRouter, HTTPException, UploadFile, File
 from loguru import logger
-from excel_processor import ExcelProcessor
-from rag_pipeline import RAGPipeline
-from entitys.models import DocumentUploadResponse
-from Documents_Utils import DocumentUtils
+from ..Utils.excel_processor import ExcelProcessor
+from ..Utils.rag_pipeline import RAGPipeline
+from ..entitys.models import DocumentUploadResponse
+from ..Utils.Documents_Utils import DocumentUtils
 
 
 router = APIRouter(prefix="/document", tags=["Document Operations"])

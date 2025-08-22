@@ -1,7 +1,7 @@
 from fastapi import APIRouter
-from entitys.models import StatusResponse
-from entitys.ResMilvusId import MilVusInfo
-from milvus_utils import My_MilvusClient
+from ..entitys.models import StatusResponse
+from ..entitys.ResMilvusId import MilVusInfo
+from ..Utils.milvus_utils import My_MilvusClient
 from typing import Dict, Any, List
 from loguru import logger
 router = APIRouter(tags=["Health Check"])

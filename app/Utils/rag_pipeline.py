@@ -1,12 +1,12 @@
 import numpy as np
 from typing import List, Dict, Any
 from loguru import logger
-from milvus_utils import My_MilvusClient
-from embedding_utils import EmbeddingModel
-from reranker_utils import RerankerModel
-from graph_utils import OperationGraph
-from config import USE_RERANKER, RERANKER_TOP_K, INITIAL_RETRIEVAL_TOP_K, SIMILARITY_THRESHOLD
-
+from .milvus_utils import My_MilvusClient
+from .embedding_utils import EmbeddingModel
+from .reranker_utils import RerankerModel
+from .graph_utils import OperationGraph
+from ..config import USE_RERANKER, RERANKER_TOP_K, INITIAL_RETRIEVAL_TOP_K, SIMILARITY_THRESHOLD
+import re 
 
 
 def cosine_similarity(a, b):

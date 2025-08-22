@@ -3,14 +3,14 @@ from fastapi.responses import JSONResponse
 from loguru import logger
 import os
 
-from rag_pipeline import RAGPipeline
-from entitys.models import (
+from ..Utils.rag_pipeline import RAGPipeline
+from ..entitys.models import (
     IngestRequest, QueryRequest, QueryResponse, 
     RecallRequest, RecallResponse, RecallItem,
     QueryByFileNameRequest, QueryByFileNameResponseItem
 )
 from typing import List
-from config import USE_RERANKER, RERANKER_TOP_K, INITIAL_RETRIEVAL_TOP_K
+from ..config import USE_RERANKER, RERANKER_TOP_K, INITIAL_RETRIEVAL_TOP_K
 
 # 默认模型
 DEFAULT_MODEL = os.getenv("DEEPSEEK_MODEL", "DeepSeek-R1-Distill-Qwen-32B")
