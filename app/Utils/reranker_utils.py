@@ -10,37 +10,48 @@ import os
 from typing import List, Dict, Tuple
 
 class RerankerModel:
+    _instance = None
+    _initialized = False
+
+    def __new__(cls, *args, **kwargs):
+        """
+        实现单例模式，确保全局只有一个 RerankerModel 实例
+        """
+        if cls._instance is None:
+            cls._instance = super(RerankerModel, cls).__new__(cls)
+        return cls._instance
+
     def __init__(self):
         """
-        初始化重排模型
+        初始化重排模型，仅在第一次实例化时加载模型和分词器
         """
+        if self._initialized:
+            logger.info("RerankerModel already initialized, reusing existing instance.")
+            return
+
         try:
+            # 加载分词器和模型
             self.tokenizer = AutoTokenizer.from_pretrained(RERANKER_MODEL_PATH)
             self.model = AutoModelForSequenceClassification.from_pretrained(RERANKER_MODEL_PATH)
             self.model.eval()
             
-            # Default device is CPU
+            # 默认设备为 CPU
             self.device = torch.device("cpu")
             
-            # Parse the first specified device from RERANKER_GPU_DEVICES
-            # This handles cases like "cuda:1" or "cpu"
+            # 解析配置的设备
             configured_device_str = RERANKER_GPU_DEVICES.split(',')[0].strip().lower()
 
             if configured_device_str == "cpu" or not torch.cuda.is_available():
-                # If "cpu" is explicitly configured or CUDA is not available at all
                 self.device = torch.device("cpu")
                 logger.info("Reranker model loaded on CPU as configured or CUDA is not available.")
             else:
-                # Attempt to load on a specific GPU
                 try:
-                    # Normalize device string (e.g., "1" -> "cuda:1")
                     if not configured_device_str.startswith("cuda:"):
                         configured_device_str = f"cuda:{configured_device_str}" if configured_device_str.isdigit() else "cuda:0"
                     
                     device_id = int(configured_device_str.split(':')[1]) if ':' in configured_device_str else 0
                     
                     if device_id < torch.cuda.device_count():
-                        # Check GPU memory before selecting
                         if self._check_gpu_memory(device_id):
                             self.device = torch.device(f"cuda:{device_id}")
                             logger.info(f"Reranker model loaded on single GPU: {self.device}")
@@ -56,12 +67,16 @@ class RerankerModel:
             
             self.model = self.model.to(self.device)
 
-            # Setup memory optimization after device is determined
+            # 设置内存优化
             if ENABLE_MEMORY_OPTIMIZATION:
                 self._setup_memory_optimization()
                 
+            self._initialized = True
+            logger.info("RerankerModel initialized successfully.")
+
         except Exception as e:
             logger.error(f"Failed to load reranker model: {e}")
+            self._initialized = False
             raise
 
     def _setup_memory_optimization(self):

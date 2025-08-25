@@ -72,14 +72,12 @@ class ExcelProcessor:
                 os.unlink(temp_file.name)
                 
                 # 处理数据
-                processed_texts = self._process_dataframe(df, file_id)
+                processed_texts = self._process_dataframe(df)
                 
-                # 生成数据库表ID（使用文件ID作为表ID）
-                table_id = file_id
                 
                 logger.info(f"成功处理文件 {file.filename}，文件ID: {file_id}，生成了 {len(processed_texts)} 条记录")
                 
-                return file_id, processed_texts, table_id
+                return file_id, processed_texts
                 
         except Exception as e:
             logger.error(f"处理文件 {file.filename} 时发生错误: {e}")
@@ -154,7 +152,7 @@ class ExcelProcessor:
         
         Args:
             df: pandas DataFrame
-            file_id: 文件ID
+       
             
         Returns:
             List[str]: 处理后的文本列表
@@ -186,7 +184,6 @@ class ExcelProcessor:
             # 将一行中的所有字段拼接成一个文本
             if row_texts:
                 combined_text = " | ".join(row_texts)
-                # 添加文件ID作为元数据
                 final_text = f"{combined_text}"
                 processed_texts.append(final_text)
         

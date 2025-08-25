@@ -8,8 +8,17 @@ import time
 import numpy as np
 
 class My_MilvusClient:
-    def __init__(self, dim: int = 1024,collection_name: str = MILVUS_COLLECTION):
-        #直接初始化milvusclient，自动处理连接
+    _instance = None
+
+    def __new__(cls, *args, **kwargs):
+        if cls._instance is None:
+            cls._instance = super(My_MilvusClient, cls).__new__(cls)
+        return cls._instance
+
+    def __init__(self, dim: int = 1024, collection_name: str = MILVUS_COLLECTION):
+        if hasattr(self, '_initialized') and self._initialized:
+            return
+        
         try:
             self.client = MilvusClient(
                 uri=f"http://{MILVUS_HOST}:{MILVUS_PORT}",
@@ -21,7 +30,17 @@ class My_MilvusClient:
         
         self.dim = dim
         self.collection_name = collection_name
+        self._initialized = False
+        self.initialize_collection()
+
+    def initialize_collection(self):
+        if self._initialized:
+            logger.info(f"Collection {self.collection_name} already initialized.")
+            return
+        
         self._prepare_collection(collection_name=self.collection_name)
+        self._initialized = True
+       
 
     def _prepare_collection(self , collection_name: str ):
         #使用self.clent 统一操作
@@ -31,29 +50,35 @@ class My_MilvusClient:
             # 确保 collection 已加载
             self.client.load_collection(collection_name=self.collection_name)
             return
+        else:
+            logger.info(f"Collection '{collection_name}' does not exist. Creating...")
+            schema = MilvusClient.create_schema(auto_id=False)
+            schema.add_field("id", DataType.VARCHAR, max_length=36, is_primary=True)
+            schema.add_field("embedding", DataType.FLOAT_VECTOR, dim=self.dim)
+            schema.add_field("text", DataType.VARCHAR, max_length=65535)
+            schema.add_field("file_id", DataType.VARCHAR, max_length=36)
+            schema.add_field("file_name", DataType.VARCHAR, max_length=255)
 
-        schema = MilvusClient.create_schema(auto_id=False)
-        schema.add_field("id", DataType.VARCHAR, max_length=36, is_primary=True)
-        schema.add_field("embedding", DataType.FLOAT_VECTOR, dim=self.dim)
-        schema.add_field("text", DataType.VARCHAR, max_length=65535)
-        schema.add_field("file_id", DataType.VARCHAR, max_length=36)
-        schema.add_field("file_name", DataType.VARCHAR, max_length=255)
+            index_params = self.client.prepare_index_params()
+            index_params.add_index(
+                "embedding",
+                index_type="IVF_FLAT",
+                # metric_type="L2",#欧氏距离
+                metric_type="COSINE" ,#余弦相似度 
+                params={"nlist": 1024}
+            )
 
-        index_params = self.client.prepare_index_params()
-        index_params.add_index(
-            "embedding",
-            index_type="IVF_FLAT",
-            # metric_type="L2",#欧氏距离
-            metric_type="COSINE" ,#余弦相似度 
-            params={"nlist": 1024}
-        )
+            self.client.create_collection(
+                collection_name=self.collection_name,
+                schema=schema,
+                index_params=index_params
+            )
+            logger.info(f"Collection {self.collection_name} created ")
+            
+            self.client.load_collection(collection_name=self.collection_name)
+            logger.info(f"Collection {self.collection_name} loaded.")   
 
-        self.client.create_collection(
-            collection_name=self.collection_name,
-            schema=schema,
-            index_params=index_params
-        )
-        logger.info(f"Collection {self.collection_name} created & loaded.")
+            return
     
 
     def get_collection_info(self) -> Dict[str, Any]:
@@ -325,4 +350,3 @@ class My_MilvusClient:
         )
         return rows[0].get("file_name") if rows else None
 
-        

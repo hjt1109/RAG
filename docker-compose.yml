@@ -28,7 +28,7 @@ services:
       - MINIO_ADDRESS=minio:9001
     ports:
       - "19531:19530"
-     
+      - "8091:9091"
     depends_on:
       - etcd
       - minio
@@ -46,39 +46,39 @@ services:
     depends_on:
       - milvus
 
-  app:  
-    build:
-      context: .
-      dockerfile: docker/Dockerfile
-    container_name: rag_app
-    ports:
-      - "8010:8010"
-    depends_on:
-      - milvus
-    environment:
-      - MILVUS_HOST=milvus
-      - MILVUS_PORT=19530
-      - HF_ENDPOINT=https://hf-mirror.com
-      - USE_RERANKER=true
-      - RERANKER_TOP_K=5
-      - INITIAL_RETRIEVAL_TOP_K=10
-      - EMBEDDING_GPU_DEVICES=cpu
-      - RERANKER_GPU_DEVICES=cuda:1
-      - ENABLE_MEMORY_OPTIMIZATION=true
-      - MAX_MEMORY_FRACTION=0.8
-      - ENABLE_MEMORY_POOLING=true
-      - PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
-    volumes:
-      - ./app/models:/app/models
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: 1  # 只使用1个GPU
-              capabilities: [gpu]
-        limits:
-          memory: 8G  # 减少内存分配
+  # app:  
+  #   build:
+  #     context: .
+  #     dockerfile: docker/Dockerfile
+  #   container_name: rag_app
+  #   ports:
+  #     - "8010:8010"
+  #   depends_on:
+  #     - milvus
+  #   environment:
+  #     - MILVUS_HOST=milvus
+  #     - MILVUS_PORT=19530
+  #     - HF_ENDPOINT=https://hf-mirror.com
+  #     - USE_RERANKER=true
+  #     - RERANKER_TOP_K=5
+  #     - INITIAL_RETRIEVAL_TOP_K=10
+  #     - EMBEDDING_GPU_DEVICES=cpu
+  #     - RERANKER_GPU_DEVICES=cuda:1
+  #     - ENABLE_MEMORY_OPTIMIZATION=true
+  #     - MAX_MEMORY_FRACTION=0.8
+  #     - ENABLE_MEMORY_POOLING=true
+  #     - PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
+  #   volumes:
+  #     - ./app/models:/app/models
+  #   deploy:
+  #     resources:
+  #       reservations:
+  #         devices:
+  #           - driver: nvidia
+  #             count: 1  # 只使用1个GPU
+  #             capabilities: [gpu]
+  #       limits:
+  #         memory: 8G  # 减少内存分配
 
 volumes:
   etcd_data:
