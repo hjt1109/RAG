@@ -1,10 +1,7 @@
-from transformers import AutoTokenizer, AutoModel,AutoModelForSequenceClassification
+from transformers import AutoTokenizer , AutoModelForSequenceClassification
 import torch
-import torch.nn as nn
 from loguru import logger
 from ..config import RERANKER_MODEL_PATH, RERANKER_GPU_DEVICES, ENABLE_MEMORY_OPTIMIZATION, MAX_MEMORY_FRACTION, ENABLE_MEMORY_POOLING
-from typing import List, Tuple
-import numpy as np
 import gc
 import os
 from typing import List, Dict, Tuple
@@ -159,7 +156,7 @@ class RerankerModel:
                 return_tensors="pt",
                 max_length=512
             )
-            logger.debug(f"Tokenizer output: {inputs}")
+            # logger.debug(f"Tokenizer output: {inputs}")
          
             # 将输入数据移动到设备
             inputs = {k: v.to(self.device) for k, v in inputs.items()}
@@ -275,4 +272,41 @@ class RerankerModel:
             return {
                 query: [(comp, score, 0.0) for comp, score in components]
                 for query, components in initial_results.items()
+            }
+    #交易名称rerank
+    def rerank_transactions(self, initial_results: Dict[str, List], top_k: int = None) -> Dict[str, List[Tuple[Dict, float, float]]]:
+        reranked_results = {}
+        try:
+            for query, transactions in initial_results.items():
+                if not transactions:
+                    reranked_results[query] = []
+                    continue
+                
+                # 提取交易名称作为文档内容，保留初始分数
+                passages_with_scores = [(trans['交易名称'], score) for trans, score in transactions]
+                
+                # 使用 rerank_with_scores 方法进行重排
+                reranked = self.rerank_with_scores(query, passages_with_scores, top_k)
+                
+                # 将重排结果映射回原始交易信息
+                transaction_map = {trans['交易名称']: trans for trans, _ in transactions}
+                reranked_transactions = [
+                    (transaction_map[text], initial_score, rerank_score)
+                    for text, rerank_score, initial_score in reranked
+                ]
+                
+                reranked_results[query] = reranked_transactions
+                
+            logger.info(f"Completed reranking for {len(initial_results)} queries")
+            return reranked_results
+            
+        except Exception as e:
+            logger.error(f"Reranking transactions failed: {e}")
+            if ENABLE_MEMORY_OPTIMIZATION and self.device.type == 'cuda':
+                self._clear_gpu_memory()
+            # 返回原始结构，添加默认重排分数 0.0
+            logger.warning("Reranking transactions failed, returning original transactions with default rerank scores.")
+            return {
+                query: [(trans, score, 0.0) for trans, score in transactions]
+                for query, transactions in initial_results.items()
             }

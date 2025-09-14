@@ -24,5 +24,3 @@ class System_Recogni:
 
 
 system_recogni = System_Recogni()
-question = "你是谁？&&李明&&"
-print(system_recogni.extract_system_name(question))

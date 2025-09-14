@@ -144,3 +144,6 @@ class EmbeddingModel:
             if ENABLE_MEMORY_OPTIMIZATION and self.device.type == 'cuda':
                 self._clear_gpu_memory()
             raise
+
+
+embedding_model = EmbeddingModel()

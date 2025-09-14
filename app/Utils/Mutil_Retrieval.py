@@ -40,3 +40,5 @@ def Multi_Retrieval_withoutfile_id(components : List[str], system_name : str, fi
         results = milvus_client.search_similar(system_name, query_embedding, top_k, filter_score)
         all_results[component] = results
     return all_results
+
+

@@ -23,6 +23,4 @@ class Components_Recogni:
             return []
 
 components_recogni = Components_Recogni()
-question = "What is the capital of <China> and <Russia>?  <China>  <1>"
-components = components_recogni.get_components(question)
-print(components)
+ 

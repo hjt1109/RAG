@@ -224,8 +224,8 @@ class RAGPipeline:
                 if self.reranker and contexts:
                     logger.info(f"Step {step_id} - Starting document reranking...")
                     reranked_results = self.reranker.rerank_with_scores(step, search_results, top_k=RERANKER_TOP_K)
-                    contexts = [text for text, score in reranked_results]
-                    similarity_scores = [score for text, score in reranked_results]
+                    contexts = [text for text, rerank_score, initial_score in reranked_results]
+                    similarity_scores = [rerank_score for text, rerank_score, initial_score in reranked_results]
                     logger.info(f"Step {step_id} - Reranked contexts: {contexts}")
 
                 # Graph validation
