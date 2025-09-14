@@ -126,12 +126,12 @@ async def rerank_in_componets_table(request: RerankRequest):
         query_id = str(uuid.uuid4())
         logger.info(f"开始重排查询 {query_id}: {question}")
         
-        # 1️⃣ 根据 file_name 解析 file_id
-        effective_file_id = None
-        if file_name and file_name.strip():
-            effective_file_id = Milvus_Components.get_file_id_by_name(file_name.strip())
-            if not effective_file_id:
-                raise HTTPException(status_code=404, detail=f"未找到文件 {file_name}")
+        # # 1️⃣ 根据 file_name 解析 file_id
+        # effective_file_id = None
+        # if file_name and file_name.strip():
+        #     effective_file_id = Milvus_Components.get_file_id_by_name(file_name.strip())
+        #     if not effective_file_id:
+        #         raise HTTPException(status_code=404, detail=f"未找到文件 {file_name}")
         
         # 2️⃣ 初始检索
         retrieval_start = time.time()
@@ -147,8 +147,8 @@ async def rerank_in_componets_table(request: RerankRequest):
         else:
             logger.info(f"未识别到组件内容")
         
-        if effective_file_id:
-            initial_results = Multi_Retrieval_withfile_id(components, system_name, file_id=effective_file_id, filter_score=filter_score, top_k=initial_top_k)
+        if  file_id:
+            initial_results = Multi_Retrieval_withfile_id(components, system_name, file_id=file_id, filter_score=filter_score, top_k=initial_top_k)
         else:
             initial_results = Multi_Retrieval_withoutfile_id(components, system_name, filter_score=filter_score, top_k=initial_top_k)
         retrieval_time = (time.time() - retrieval_start) * 1000
@@ -171,7 +171,7 @@ async def rerank_in_componets_table(request: RerankRequest):
         response = RerankResponse_Componets(
             query_id=query_id,
             question=question,
-            file_id=effective_file_id or file_id,
+            file_id=file_id,
             file_name=file_name,
             results={
                 query: [
