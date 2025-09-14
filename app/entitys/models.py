@@ -39,7 +39,7 @@ class DocumentUploadResponse(BaseModel):
     file_id: str = Field(..., description="唯一文件ID")
     status_code: int = Field(200, description="状态码")
     message: str = Field("插入成功", description="状态消息")
-    processed_count: int = Field(..., description="处理的记录数量")
+    processed_count: Optional[int] = Field(None, description="处理的记录数量")
 
 class QueryByFileNameRequest(BaseModel):
     question: str

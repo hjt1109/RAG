@@ -71,3 +71,50 @@ class RerankResponse_Componets(BaseModel):
     retrieval_time_ms: float
     rerank_time_ms: float
     total_time_ms: float
+
+class ComponentInfo_v2(BaseModel):
+    file_id: Optional[str] = None
+    组件ID: Optional[str] = None
+    组件名称: Optional[str] = None
+    组件类型: Optional[str] = None
+    交易系统: Optional[str] = None
+    组件说明: Optional[str] = None
+    应用类型: Optional[str] = None
+    输入参数: Optional[str] = None
+    输出参数: Optional[str] = None
+
+class ComponentResult_v2(BaseModel):
+    component: ComponentInfo_v2
+    initial_score: Optional[float] = 0.0
+    rerank_score: Optional[float] = 0.0
+
+class RerankResponse_Componets_v2(BaseModel):
+    query_id: Optional[str] = None
+    question: Optional[str] = None
+    file_id: Optional[str] = None
+    file_name: Optional[str] = None
+    results: Dict[str, List[ComponentResult_v2]]
+    retrieval_time: Optional[float] = 0.0
+    rerank_time: Optional[float] = 0.0
+    total_time: Optional[float] = 0.0
+
+class TransactionInfo_v2(BaseModel):
+    file_id: Optional[str] = None
+    交易名称: Optional[str] = None
+    系统名称: Optional[str] = None
+    功能描述: Optional[str] = None
+
+class TransactionResult_v2(BaseModel):
+    transaction: TransactionInfo_v2
+    initial_score: Optional[float] = 0.0
+    rerank_score: Optional[float] = 0.0
+
+class RerankResponse_Transaction_v2(BaseModel):
+    query_id: Optional[str] = None
+    question: Optional[str] = None
+    file_id: Optional[str] = None
+    file_name: Optional[str] = None
+    results: Dict[str, List[TransactionResult_v2]]
+    retrieval_time: Optional[float] = 0.0
+    rerank_time: Optional[float] = 0.0
+    total_time: Optional[float] = 0.0
